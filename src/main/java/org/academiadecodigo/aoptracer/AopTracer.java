@@ -1,26 +1,38 @@
 package org.academiadecodigo.aoptracer;
 
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
 
-import java.util.Map;
+import java.util.Arrays;
 
 @Aspect
-public class AopAdvisor {
+public class AopTracer {
 
     private final String ENV_NAME = "DEV_MODE";
+    private boolean tracerEnabled;
+
+    public AopTracer() {
+        tracerEnabled = System.getenv().containsKey(ENV_NAME) && Boolean.parseBoolean(System.getenv().get(ENV_NAME));
+    }
+
+    public void init() {
+        System.err.printf("%s=%b\n", ENV_NAME, tracerEnabled);
+        new AnnotationAwareAspectJAutoProxyCreator();
+    }
 
     @Before("execution(* org.academiadecodigo.*.*.*(..))")
-    public void beforeAdvice() {
-        Map<String, String> env = System.getenv();
+    public void beforeAdvice(JoinPoint joinPoint) {
 
-        if (!env.containsKey(ENV_NAME) || !Boolean.parseBoolean(env.get(ENV_NAME))) {
+        if (!tracerEnabled) {
             return;
         }
 
-        //TODO: Implement log to file mechanism
-        String envValue = env.get(ENV_NAME);
-        System.out.printf("%s=%s\n", ENV_NAME, envValue);
-        System.out.println("LOG HERE! HERE! HERE!");
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String methodName = joinPoint.getSignature().getName();
+        String args = Arrays.toString(joinPoint.getArgs()).replaceAll("[\\[\\]]","");
+
+        System.err.printf("AOP-TRACER: %s.%s(%s)\n", className, methodName, args);
     }
 }
