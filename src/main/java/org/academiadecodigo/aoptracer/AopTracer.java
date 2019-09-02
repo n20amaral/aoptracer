@@ -1,16 +1,16 @@
 package org.academiadecodigo.aoptracer;
 
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator;
 
 import java.util.Arrays;
 
 @Aspect
 public class AopTracer {
 
-    private final String ENV_NAME = "DEV_MODE";
+    private static final String ENV_NAME = "DEV_MODE";
     private boolean tracerEnabled;
 
     public AopTracer() {
@@ -19,10 +19,9 @@ public class AopTracer {
 
     public void init() {
         System.err.printf("%s=%b\n", ENV_NAME, tracerEnabled);
-        new AnnotationAwareAspectJAutoProxyCreator();
     }
 
-    @Before("execution(* org.academiadecodigo.*.*.*(..))")
+    @Before(value = "execution(* org.academiadecodigo..*(..))")
     public void beforeAdvice(JoinPoint joinPoint) {
 
         if (!tracerEnabled) {
@@ -34,5 +33,11 @@ public class AopTracer {
         String args = Arrays.toString(joinPoint.getArgs()).replaceAll("[\\[\\]]","");
 
         System.err.printf("AOP-TRACER: %s.%s(%s)\n", className, methodName, args);
+
+    }
+
+    @AfterReturning(value = "execution(int org.academiadecodigo..*(..) )", returning = "retVal")
+    public void afterReturningIntAdvice(int retVal) {
+        System.err.printf("AOP-TRACER: Last method has returned: %d\n", retVal);
     }
 }
